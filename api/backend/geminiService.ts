@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { AIDiagnosis, KiotMeterReading } from '../../src/types';
+import { AIDiagnosis, KiotMeterReading } from '../types';
 
 let genAIClient: GoogleGenAI | null = null;
 

@@ -8,7 +8,7 @@ import {
   IncidentSeverity,
   IncidentAssigneeRole,
   PlantEnergySummary,
-} from '../../src/types';
+} from '../types';
 
 export const METERS: KiotDiscoveredMeter[] = [
   {
