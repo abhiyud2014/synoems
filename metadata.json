@@ -1,0 +1,6 @@
+{
+  "name": "KIOT Industrial Energy Management System (EMS)",
+  "description": "Production-ready AI-enabled Industrial Energy Management System monitoring power quality, harmonics, demand profiles, and automated incident ticketing with KIOT schema telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
