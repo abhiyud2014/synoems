@@ -64,6 +64,7 @@ class KiotSimulatorEngine {
   private autoFaultsEnabled: boolean = true;
   private tickCount: number = 0;
   private intervalTimer: NodeJS.Timeout | null = null;
+  private incidentCooldowns: Map<string, number> = new Map(); // key: deviceId:category -> last incident created timestamp
 
   constructor() {
     this.initializeMeters();
@@ -634,7 +635,13 @@ class KiotSimulatorEngine {
           inc.status !== 'RESOLVED'
       );
 
-      if (!existing) {
+      // Cooldown: don't create new incidents for same device+category within 5 minutes
+      const cooldownKey = `${device_id}:${alertTriggered.category}`;
+      const lastCreated = this.incidentCooldowns.get(cooldownKey) ?? 0;
+      const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+      const inCooldown = Date.now() - lastCreated < COOLDOWN_MS;
+
+      if (!existing && !inCooldown) {
         const incId = `INC-2026-${String(this.incidents.length + 801).padStart(4, '0')}`;
         const newIncident: Incident = {
           id: incId,
@@ -670,6 +677,7 @@ class KiotSimulatorEngine {
         };
 
         this.incidents.unshift(newIncident);
+        this.incidentCooldowns.set(cooldownKey, Date.now());
         // Keep incidents list bounded
         if (this.incidents.length > 100) {
           this.incidents.pop();

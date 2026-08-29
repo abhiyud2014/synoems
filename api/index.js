@@ -44788,6 +44788,7 @@ var METERS = [
   }
 ];
 var KiotSimulatorEngine = class {
+  // key: deviceId:category -> last incident created timestamp
   constructor() {
     this.latestReadings = /* @__PURE__ */ new Map();
     this.historicalData = /* @__PURE__ */ new Map();
@@ -44797,6 +44798,7 @@ var KiotSimulatorEngine = class {
     this.autoFaultsEnabled = true;
     this.tickCount = 0;
     this.intervalTimer = null;
+    this.incidentCooldowns = /* @__PURE__ */ new Map();
     this.initializeMeters();
     this.seedHistoricalData();
     this.startSimulationLoop();
@@ -45268,7 +45270,11 @@ var KiotSimulatorEngine = class {
       const existing = this.incidents.find(
         (inc) => inc.deviceId === device_id && inc.category === alertTriggered.category && inc.status !== "RESOLVED"
       );
-      if (!existing) {
+      const cooldownKey = `${device_id}:${alertTriggered.category}`;
+      const lastCreated = this.incidentCooldowns.get(cooldownKey) ?? 0;
+      const COOLDOWN_MS = 5 * 60 * 1e3;
+      const inCooldown = Date.now() - lastCreated < COOLDOWN_MS;
+      if (!existing && !inCooldown) {
         const incId = `INC-2026-${String(this.incidents.length + 801).padStart(4, "0")}`;
         const newIncident = {
           id: incId,
@@ -45303,6 +45309,7 @@ var KiotSimulatorEngine = class {
           ]
         };
         this.incidents.unshift(newIncident);
+        this.incidentCooldowns.set(cooldownKey, Date.now());
         if (this.incidents.length > 100) {
           this.incidents.pop();
         }
