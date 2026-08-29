@@ -1,7 +1,5 @@
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
@@ -9,15 +7,6 @@ var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // api/backend/geminiService.ts
 var geminiService_exports = {};
@@ -25,12 +14,13 @@ __export(geminiService_exports, {
   askEnergyCopilot: () => askEnergyCopilot,
   generateIncidentDiagnosis: () => generateIncidentDiagnosis
 });
+import { GoogleGenAI, Type } from "@google/genai";
 function getGenAI() {
   if (!process.env.GEMINI_API_KEY) {
     return null;
   }
   if (!genAIClient) {
-    genAIClient = new import_genai.GoogleGenAI({
+    genAIClient = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
         headers: {
@@ -66,32 +56,32 @@ Provide a concise, high-impact industrial diagnosis in JSON matching the schema.
           systemInstruction: "You are an expert power system diagnostic engineer for heavy industrial manufacturing facilities. Provide strictly verified electrical engineering insights, mentioning specific mitigation devices like APFC capacitor banks, active harmonic filters (AHF), detuned reactors, and CT/PT inspection.",
           responseMimeType: "application/json",
           responseSchema: {
-            type: import_genai.Type.OBJECT,
+            type: Type.OBJECT,
             properties: {
               rootCause: {
-                type: import_genai.Type.STRING,
+                type: Type.STRING,
                 description: "Clear, technically precise physical explanation of what caused the anomaly."
               },
               impactAnalysis: {
-                type: import_genai.Type.STRING,
+                type: Type.STRING,
                 description: "Financial, equipment lifespan, tariff penalty, and transformer thermal impact."
               },
               actionSteps: {
-                type: import_genai.Type.ARRAY,
-                items: { type: import_genai.Type.STRING },
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
                 description: "3-4 actionable sequential steps for plant engineers to resolve the issue."
               },
               equipmentRisk: {
-                type: import_genai.Type.STRING,
+                type: Type.STRING,
                 enum: ["CRITICAL", "MODERATE", "LOW"],
                 description: "Severity risk to plant machinery and switchgear."
               },
               estimatedCostPenaltyPerHour: {
-                type: import_genai.Type.STRING,
+                type: Type.STRING,
                 description: "Estimated financial loss or utility penalty per hour."
               },
               recommendedHardwareSetting: {
-                type: import_genai.Type.STRING,
+                type: Type.STRING,
                 description: "Specific hardware knob or switchgear setting (e.g. APFC stage +25kVAR)."
               }
             },
@@ -239,20 +229,12 @@ Answer the plant operator's question directly, clearly, with concise technical p
 2. **Harmonics Mitigation**: Ensure Active Harmonic Filters (AHF) are active on production lines with high VFD concentration to suppress 5th and 7th harmonic orders below 5% THD.
 3. **Peak Shaving**: Consider staggering compressor startup cycles during peak tariff windows (09:00 - 18:00) to lower maximum demand charges.`;
 }
-var import_genai, genAIClient;
+var genAIClient;
 var init_geminiService = __esm({
   "api/backend/geminiService.ts"() {
-    import_genai = require("@google/genai");
     genAIClient = null;
   }
 });
-
-// api/index.ts
-var index_exports = {};
-__export(index_exports, {
-  default: () => handler
-});
-module.exports = __toCommonJS(index_exports);
 
 // api/backend/kiotSimulator.ts
 var METERS = [
@@ -1134,3 +1116,6 @@ async function handler(req, res) {
     return json(res, { error: "Internal Server Error", details: err.message }, 500);
   }
 }
+export {
+  handler as default
+};
