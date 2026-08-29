@@ -51,8 +51,19 @@ export const IncidentKanban: React.FC<IncidentKanbanProps> = ({
     return true;
   });
 
+  const severityWeight: Record<string, number> = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
+
   const getIncidentsByStatus = (status: IncidentStatus) => {
-    return filteredIncidents.filter((i) => i.status === status);
+    return filteredIncidents
+      .filter((i) => i.status === status)
+      .sort((a, b) => {
+        const sevDiff = (severityWeight[b.severity] ?? 0) - (severityWeight[a.severity] ?? 0);
+        if (sevDiff !== 0) return sevDiff;
+        const aDeadline = new Date(a.slaDeadline).getTime();
+        const bDeadline = new Date(b.slaDeadline).getTime();
+        if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {

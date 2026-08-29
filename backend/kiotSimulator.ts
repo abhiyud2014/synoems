@@ -631,7 +631,7 @@ class KiotSimulatorEngine {
         (inc) =>
           inc.deviceId === device_id &&
           inc.category === alertTriggered!.category &&
-          (inc.status === 'NEW' || inc.status === 'IN_PROGRESS')
+          inc.status !== 'RESOLVED'
       );
 
       if (!existing) {
@@ -727,14 +727,31 @@ class KiotSimulatorEngine {
   public getIncidents(): Incident[] {
     // Update SLA breaches dynamically
     const now = Date.now();
-    return this.incidents.map((inc) => {
-      const deadline = new Date(inc.slaDeadline).getTime();
-      const isBreached = inc.status !== 'RESOLVED' && now > deadline;
-      return {
-        ...inc,
-        isSlaBreached: isBreached,
-      };
-    });
+    const sevWeight: Record<string, number> = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
+    return this.incidents
+      .map((inc) => {
+        const deadline = new Date(inc.slaDeadline).getTime();
+        const isBreached = inc.status !== 'RESOLVED' && now > deadline;
+        return {
+          ...inc,
+          isSlaBreached: isBreached,
+        };
+      })
+      .sort((a, b) => {
+        // Active incidents first (by status order), then resolved at bottom
+        const statusOrder: Record<string, number> = { NEW: 0, IN_PROGRESS: 1, PENDING_VERIFICATION: 2, RESOLVED: 3 };
+        const statusDiff = (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0);
+        if (statusDiff !== 0) return statusDiff;
+        // Within same status: severity descending
+        const sevDiff = (sevWeight[b.severity] ?? 0) - (sevWeight[a.severity] ?? 0);
+        if (sevDiff !== 0) return sevDiff;
+        // Then SLA deadline ascending (most urgent first)
+        const aDeadline = new Date(a.slaDeadline).getTime();
+        const bDeadline = new Date(b.slaDeadline).getTime();
+        if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+        // Finally timestamp descending (newest first)
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
   }
 
   public updateIncidentStatus(

@@ -45097,7 +45097,6 @@ var KiotSimulatorEngine = class {
     };
   }
   startSimulationLoop() {
-    if (process.env.VERCEL) return;
     this.intervalTimer = setInterval(() => {
       this.tick();
     }, 5e3);
@@ -45267,7 +45266,7 @@ var KiotSimulatorEngine = class {
     }
     if (alertTriggered) {
       const existing = this.incidents.find(
-        (inc) => inc.deviceId === device_id && inc.category === alertTriggered.category && (inc.status === "NEW" || inc.status === "IN_PROGRESS")
+        (inc) => inc.deviceId === device_id && inc.category === alertTriggered.category && inc.status !== "RESOLVED"
       );
       if (!existing) {
         const incId = `INC-2026-${String(this.incidents.length + 801).padStart(4, "0")}`;
@@ -45351,6 +45350,7 @@ var KiotSimulatorEngine = class {
   }
   getIncidents() {
     const now = Date.now();
+    const sevWeight = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
     return this.incidents.map((inc) => {
       const deadline = new Date(inc.slaDeadline).getTime();
       const isBreached = inc.status !== "RESOLVED" && now > deadline;
@@ -45358,6 +45358,16 @@ var KiotSimulatorEngine = class {
         ...inc,
         isSlaBreached: isBreached
       };
+    }).sort((a, b) => {
+      const statusOrder = { NEW: 0, IN_PROGRESS: 1, PENDING_VERIFICATION: 2, RESOLVED: 3 };
+      const statusDiff = (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0);
+      if (statusDiff !== 0) return statusDiff;
+      const sevDiff = (sevWeight[b.severity] ?? 0) - (sevWeight[a.severity] ?? 0);
+      if (sevDiff !== 0) return sevDiff;
+      const aDeadline = new Date(a.slaDeadline).getTime();
+      const bDeadline = new Date(b.slaDeadline).getTime();
+      if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
   }
   updateIncidentStatus(incidentId, status, author = "Control Room Operator", note) {
@@ -45465,18 +45475,7 @@ var KiotSimulatorEngine = class {
     };
   }
 };
-var _instance = null;
-function getEngine() {
-  if (!_instance) {
-    _instance = new KiotSimulatorEngine();
-  }
-  return _instance;
-}
-var simulatorEngine = new Proxy({}, {
-  get(_t, prop) {
-    return getEngine()[prop];
-  }
-});
+var simulatorEngine = new KiotSimulatorEngine();
 
 // api/index.ts
 function json2(res, data, status = 200) {
