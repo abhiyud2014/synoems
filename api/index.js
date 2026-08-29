@@ -45106,7 +45106,8 @@ var KiotSimulatorEngine = class {
   tick() {
     this.tickCount++;
     const now = /* @__PURE__ */ new Date();
-    if (this.autoFaultsEnabled && this.tickCount % 24 === 0) {
+    const isVercel = !!(typeof process !== "undefined" && process.env && process.env["VERCEL"]);
+    if (!isVercel && this.autoFaultsEnabled && this.tickCount % 24 === 0) {
       this.randomlyInjectOrClearFault();
     }
     METERS.forEach((meter) => {
@@ -45160,7 +45161,9 @@ var KiotSimulatorEngine = class {
         history.shift();
       }
       this.historicalData.set(meter.device_id, history);
-      this.evaluateAnomalyRule(reading);
+      if (!isVercel) {
+        this.evaluateAnomalyRule(reading);
+      }
     });
   }
   randomlyInjectOrClearFault() {

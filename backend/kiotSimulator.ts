@@ -425,9 +425,10 @@ class KiotSimulatorEngine {
   private tick() {
     this.tickCount++;
     const now = new Date();
+    const isVercel = !!(typeof process !== 'undefined' && process.env && process.env['VERCEL']);
 
     // Auto fault random injection every ~30 ticks (150 seconds) if enabled
-    if (this.autoFaultsEnabled && this.tickCount % 24 === 0) {
+    if (!isVercel && this.autoFaultsEnabled && this.tickCount % 24 === 0) {
       this.randomlyInjectOrClearFault();
     }
 
@@ -492,7 +493,10 @@ class KiotSimulatorEngine {
       this.historicalData.set(meter.device_id, history);
 
       // Evaluate anomaly engine for auto-incident ticketing
-      this.evaluateAnomalyRule(reading);
+      // Skip on Vercel — incidents would pile up across cold starts with no cooldown persistence
+      if (!isVercel) {
+        this.evaluateAnomalyRule(reading);
+      }
     });
   }
 
