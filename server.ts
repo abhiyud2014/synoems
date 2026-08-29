@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { simulatorEngine, METERS } from './server/kiotSimulator';
-import { generateIncidentDiagnosis, askEnergyCopilot } from './server/geminiService';
+import { simulatorEngine, METERS } from './backend/kiotSimulator';
+import { generateIncidentDiagnosis, askEnergyCopilot } from './backend/geminiService';
 
 dotenv.config();
 
