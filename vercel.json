@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/index.ts": {
-      "includeFiles": "api/backend/**"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
