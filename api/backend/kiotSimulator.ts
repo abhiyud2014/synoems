@@ -861,4 +861,17 @@ class KiotSimulatorEngine {
   }
 }
 
-export const simulatorEngine = new KiotSimulatorEngine();
+let _instance: KiotSimulatorEngine | null = null;
+
+function getEngine(): KiotSimulatorEngine {
+  if (!_instance) {
+    _instance = new KiotSimulatorEngine();
+  }
+  return _instance;
+}
+
+export const simulatorEngine = new Proxy({} as KiotSimulatorEngine, {
+  get(_t, prop) {
+    return (getEngine() as any)[prop];
+  },
+});
