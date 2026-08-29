@@ -1,18 +1,12 @@
 {
-  "builds": [
-    {
-      "src": "api/index.mjs",
-      "use": "@vercel/node"
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.mjs"
+      "destination": "/api"
     },
     {
       "source": "/health",
-      "destination": "/api/index.mjs"
+      "destination": "/api"
     }
   ]
 }
