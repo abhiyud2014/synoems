@@ -1,105 +1,182 @@
-import express from 'express';
-import cors from 'cors';
-import { simulatorEngine, METERS } from './backend/kiotSimulator';
+import type { IncomingMessage, ServerResponse } from 'http';
 
-const app = express();
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], credentials: true }));
-app.use(express.json());
-
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-app.get(['/api/meters/discover', '/api/meters'], (_req, res) => {
-  const meters = simulatorEngine.getDiscoveredMeters();
-  res.json(meters.map((m: any) => ({ device_id: m.device_id, device_name: m.device_name, location: m.location, feeder_type: m.feeder_type, rated_capacity_kva: m.rated_capacity_kva })));
-});
-
-app.get('/api/meters/:device_id/latest', (req, res) => {
-  const { device_id } = req.params;
-  if (!device_id) return res.status(400).json({ error: 'Invalid Device ID' });
-  const reading = simulatorEngine.getLatestReading(device_id);
-  if (!reading) return res.status(404).json({ error: 'Device not Found' });
-  res.json(reading);
-});
-
-app.get('/api/meters-all/latest', (_req, res) => {
-  res.json(simulatorEngine.getAllLatestReadings());
-});
-
-app.get('/api/meters/:device_id/history', (req, res) => {
-  const { device_id } = req.params;
-  const range = (req.query.range as string) || '24h';
-  const meter = METERS.find((m: any) => m.device_id === device_id);
-  if (!meter) return res.status(404).json({ error: 'Device not Found' });
-  res.json({ device_id, device_name: meter.device_name, range, data: simulatorEngine.getHistory(device_id, range) });
-});
-
-app.get('/api/plant/summary', (_req, res) => {
-  res.json(simulatorEngine.getPlantSummary());
-});
-
-app.get('/api/incidents', (_req, res) => {
-  res.json(simulatorEngine.getIncidents());
-});
-
-app.all('/api/incidents/:id/status', (req, res) => {
-  const { id } = req.params;
-  const { status, author, note } = req.body;
-  if (!status) return res.status(400).json({ error: 'Status is required' });
-  const updated = simulatorEngine.updateIncidentStatus(id, status, author, note);
-  if (!updated) return res.status(404).json({ error: 'Incident not found' });
-  res.json({ success: true, incident: updated, ...updated });
-});
-
-app.all('/api/incidents/:id/diagnose', async (req, res) => {
-  const { id } = req.params;
-  const incidents = simulatorEngine.getIncidents();
-  const incident = incidents.find((i: any) => i.id === id);
-  if (!incident) return res.status(404).json({ error: 'Incident not found' });
-  try {
-    const { generateIncidentDiagnosis } = await import('./backend/geminiService');
-    const diagnosis = await generateIncidentDiagnosis(incident.title, incident.category, incident.telemetrySnapshot);
-    simulatorEngine.updateIncidentDiagnosis(id, diagnosis);
-    res.json({ success: true, diagnosis, incident: simulatorEngine.getIncidents().find((i: any) => i.id === id) });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Diagnosis failed', details: err.message });
+let _sim: any = null;
+async function getSim() {
+  if (!_sim) {
+    const mod = await import('./backend/kiotSimulator');
+    _sim = mod.simulatorEngine;
   }
-});
+  return _sim;
+}
 
-app.get(['/api/simulation/status', '/api/simulation/state'], (_req, res) => {
-  res.json(simulatorEngine.getSimulationState());
-});
+function json(res: ServerResponse, data: any, status = 200) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
 
-app.post(['/api/simulation/inject-fault', '/api/simulation/fault'], (req, res) => {
-  const device_id = req.body.device_id || req.body.deviceId;
-  const fault_type = req.body.fault_type || req.body.faultType;
-  if (!device_id || !fault_type) return res.status(400).json({ error: 'device_id and fault_type are required' });
-  simulatorEngine.injectFault(device_id, fault_type);
-  res.json({ success: true, message: `Fault ${fault_type} injected into ${device_id}` });
-});
+function parseBody(req: IncomingMessage): Promise<any> {
+  return new Promise((resolve) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => { try { resolve(JSON.parse(body)); } catch { resolve({}); } });
+  });
+}
 
-app.post(['/api/simulation/clear-faults', '/api/simulation/clear'], (_req, res) => {
-  simulatorEngine.clearAllFaults();
-  res.json({ success: true, message: 'All simulation faults cleared' });
-});
+function matchRoute(method: string, url: string, pattern: string): { match: boolean; params: Record<string, string>; query: Record<string, string> } {
+  const [path, qs] = url.split('?');
+  const query: Record<string, string> = {};
+  if (qs) qs.split('&').forEach(p => { const [k, v] = p.split('='); query[decodeURIComponent(k)] = decodeURIComponent(v || ''); });
 
-app.post(['/api/simulation/toggle-auto', '/api/simulation/auto'], (req, res) => {
-  const enabled = req.body.enabled !== undefined ? req.body.enabled : true;
-  simulatorEngine.setAutoFaults(Boolean(enabled));
-  res.json({ success: true, autoFaultsEnabled: Boolean(enabled) });
-});
+  const patternParts = pattern.split('/');
+  const pathParts = path.split('/');
+  const params: Record<string, string> = {};
+  if (patternParts.length !== pathParts.length) return { match: false, params, query };
 
-app.post('/api/ai/copilot', async (req, res) => {
-  const { query } = req.body;
-  if (!query) return res.status(400).json({ error: 'Query is required' });
-  try {
-    const { askEnergyCopilot } = await import('./backend/geminiService');
-    const reply = await askEnergyCopilot(query, { meters: simulatorEngine.getAllLatestReadings(), incidents: simulatorEngine.getIncidents(), plantSummary: simulatorEngine.getPlantSummary() });
-    res.json({ reply });
-  } catch (err: any) {
-    res.status(500).json({ error: 'AI Copilot failed', details: err.message });
+  for (let i = 0; i < patternParts.length; i++) {
+    if (patternParts[i].startsWith(':')) {
+      params[patternParts[i].slice(1)] = pathParts[i];
+    } else if (patternParts[i] !== pathParts[i]) {
+      return { match: false, params, query };
+    }
   }
-});
+  return { match: true, params, query };
+}
 
-export default app;
+function route(url: string, pattern: string) {
+  return matchRoute('GET', url, pattern);
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
+  const url = req.url || '/';
+  const method = req.method || 'GET';
+  const path = url.split('?')[0];
+
+  try {
+    // Health
+    if (path === '/health') { return json(res, { status: 'ok', timestamp: new Date().toISOString() }); }
+
+    // Discover meters
+    if (path === '/api/meters/discover' || path === '/api/meters') {
+      const sim = await getSim();
+      const meters = sim.getDiscoveredMeters();
+      return json(res, meters.map((m: any) => ({ device_id: m.device_id, device_name: m.device_name, location: m.location, feeder_type: m.feeder_type, rated_capacity_kva: m.rated_capacity_kva })));
+    }
+
+    // All latest
+    if (path === '/api/meters-all/latest') {
+      const sim = await getSim();
+      return json(res, sim.getAllLatestReadings());
+    }
+
+    // Plant summary
+    if (path === '/api/plant/summary') {
+      const sim = await getSim();
+      return json(res, sim.getPlantSummary());
+    }
+
+    // Incidents
+    if (path === '/api/incidents' && method === 'GET') {
+      const sim = await getSim();
+      return json(res, sim.getIncidents());
+    }
+
+    // Simulation state
+    if (path === '/api/simulation/status' || path === '/api/simulation/state') {
+      const sim = await getSim();
+      return json(res, sim.getSimulationState());
+    }
+
+    // Single meter latest
+    const m = route(path, '/api/meters/:device_id/latest');
+    if (m.match) {
+      const sim = await getSim();
+      const reading = sim.getLatestReading(m.params.device_id);
+      if (!reading) return json(res, { error: 'Device not Found' }, 404);
+      return json(res, reading);
+    }
+
+    // History
+    const h = route(path, '/api/meters/:device_id/history');
+    if (h.match) {
+      const sim = await getSim();
+      const range = h.query.range || '24h';
+      const METERS_LIST = sim.getDiscoveredMeters();
+      const meter = METERS_LIST.find((mt: any) => mt.device_id === h.params.device_id);
+      const name = meter ? meter.device_name : 'Unknown';
+      return json(res, { device_id: h.params.device_id, device_name: name, range, data: sim.getHistory(h.params.device_id, range) });
+    }
+
+    // Incident status update
+    const s = route(path, '/api/incidents/:id/status');
+    if (s.match && method === 'POST') {
+      const sim = await getSim();
+      const body = await parseBody(req);
+      if (!body.status) return json(res, { error: 'Status is required' }, 400);
+      const updated = sim.updateIncidentStatus(s.params.id, body.status, body.author, body.note);
+      if (!updated) return json(res, { error: 'Incident not found' }, 404);
+      return json(res, { success: true, incident: updated, ...updated });
+    }
+
+    // Incident diagnose
+    const d = route(path, '/api/incidents/:id/diagnose');
+    if (d.match && method === 'POST') {
+      const sim = await getSim();
+      const incidents = sim.getIncidents();
+      const incident = incidents.find((i: any) => i.id === d.params.id);
+      if (!incident) return json(res, { error: 'Incident not found' }, 404);
+      try {
+        const { generateIncidentDiagnosis } = await import('./backend/geminiService');
+        const diagnosis = await generateIncidentDiagnosis(incident.title, incident.category, incident.telemetrySnapshot);
+        sim.updateIncidentDiagnosis(d.params.id, diagnosis);
+        return json(res, { success: true, diagnosis, incident: sim.getIncidents().find((i: any) => i.id === d.params.id) });
+      } catch (err: any) { return json(res, { error: 'Diagnosis failed', details: err.message }, 500); }
+    }
+
+    // Inject fault
+    if (path === '/api/simulation/inject-fault' || path === '/api/simulation/fault') {
+      if (method !== 'POST') return json(res, { error: 'Method not allowed' }, 405);
+      const sim = await getSim();
+      const body = await parseBody(req);
+      const device_id = body.device_id || body.deviceId;
+      const fault_type = body.fault_type || body.faultType;
+      if (!device_id || !fault_type) return json(res, { error: 'device_id and fault_type are required' }, 400);
+      sim.injectFault(device_id, fault_type);
+      return json(res, { success: true, message: `Fault ${fault_type} injected into ${device_id}` });
+    }
+
+    // Clear faults
+    if (path === '/api/simulation/clear-faults' || path === '/api/simulation/clear') {
+      if (method !== 'POST') return json(res, { error: 'Method not allowed' }, 405);
+      const sim = await getSim();
+      sim.clearAllFaults();
+      return json(res, { success: true, message: 'All simulation faults cleared' });
+    }
+
+    // Toggle auto
+    if (path === '/api/simulation/toggle-auto' || path === '/api/simulation/auto') {
+      if (method !== 'POST') return json(res, { error: 'Method not allowed' }, 405);
+      const sim = await getSim();
+      const body = await parseBody(req);
+      const enabled = body.enabled !== undefined ? body.enabled : true;
+      sim.setAutoFaults(Boolean(enabled));
+      return json(res, { success: true, autoFaultsEnabled: Boolean(enabled) });
+    }
+
+    // AI Copilot
+    if (path === '/api/ai/copilot' && method === 'POST') {
+      const sim = await getSim();
+      const body = await parseBody(req);
+      if (!body.query) return json(res, { error: 'Query is required' }, 400);
+      try {
+        const { askEnergyCopilot } = await import('./backend/geminiService');
+        const reply = await askEnergyCopilot(body.query, { meters: sim.getAllLatestReadings(), incidents: sim.getIncidents(), plantSummary: sim.getPlantSummary() });
+        return json(res, { reply });
+      } catch (err: any) { return json(res, { error: 'AI Copilot failed', details: err.message }, 500); }
+    }
+
+    return json(res, { error: 'Not Found' }, 404);
+  } catch (err: any) {
+    console.error('Handler error:', err);
+    return json(res, { error: 'Internal Server Error', details: err.message }, 500);
+  }
+}
