@@ -50401,7 +50401,7 @@ var KiotSimulatorEngine = class {
     this.tickCount++;
     const now = /* @__PURE__ */ new Date();
     const isVercel = !!(typeof process !== "undefined" && process.env && process.env["VERCEL"]);
-    if (!isVercel && this.autoFaultsEnabled && this.tickCount % 24 === 0) {
+    if (this.autoFaultsEnabled && this.tickCount % 24 === 0) {
       this.randomlyInjectOrClearFault();
     }
     METERS.forEach((meter) => {

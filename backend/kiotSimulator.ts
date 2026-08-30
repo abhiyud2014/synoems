@@ -431,7 +431,8 @@ class KiotSimulatorEngine {
     const isVercel = !!(typeof process !== 'undefined' && process.env && process.env['VERCEL']);
 
     // Auto fault random injection every ~30 ticks (150 seconds) if enabled
-    if (!isVercel && this.autoFaultsEnabled && this.tickCount % 24 === 0) {
+    // Now safe on Vercel since state persists via Redis
+    if (this.autoFaultsEnabled && this.tickCount % 24 === 0) {
       this.randomlyInjectOrClearFault();
     }
 
