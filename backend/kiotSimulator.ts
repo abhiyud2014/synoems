@@ -683,6 +683,8 @@ class KiotSimulatorEngine {
 
         this.incidents.unshift(newIncident);
         this.incidentCooldowns.set(cooldownKey, Date.now());
+        // Persist to KV so other instances see new incidents
+        saveIncidents(this.incidents);
         // Keep incidents list bounded
         if (this.incidents.length > 100) {
           this.incidents.pop();

@@ -50605,6 +50605,7 @@ var KiotSimulatorEngine = class {
         };
         this.incidents.unshift(newIncident);
         this.incidentCooldowns.set(cooldownKey, Date.now());
+        saveIncidents(this.incidents);
         if (this.incidents.length > 100) {
           this.incidents.pop();
         }
