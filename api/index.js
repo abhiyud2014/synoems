@@ -44533,7 +44533,7 @@ async function generateIncidentDiagnosis(incidentTitle, incidentCategory, meterR
   const ai = getGenAI();
   if (ai) {
     try {
-      const prompt = `You are a Principal Industrial Electrical Engineer & Power Quality Specialist analyzing a telemetry alert from a KIOT Energy Monitoring System.
+      const prompt = `You are a Principal Industrial Electrical Engineer & Power Quality Specialist analyzing a telemetry alert from a SIOT Energy Monitoring System.
 Alert Title: "${incidentTitle}"
 Category: "${incidentCategory}"
 Meter Name: "${meterReading.device_name}" (ID: ${meterReading.device_id})
@@ -44610,7 +44610,7 @@ function generateRuleBasedDiagnosis(title, category, reading) {
       rootCause: `Gateway communication timeout (${reading.status.last_update_seconds}s elapsed without Modbus polling update). Possible RS-485 loop disconnect or auxiliary power failure.`,
       impactAnalysis: "Telemetry blackout impedes real-time maximum demand tracking and time-of-day tariff rate monitoring.",
       actionSteps: [
-        "Check 24V DC auxiliary PSU on KIOT Gateway terminal A+/B-.",
+        "Check 24V DC auxiliary PSU on SIOT Gateway terminal A+/B-.",
         "Verify RS-485 bus terminating resistor (120 ohm) integrity.",
         "Ping IoT Gateway IP and cycle power if DHCP lease dropped."
       ],
@@ -44627,7 +44627,7 @@ function generateRuleBasedDiagnosis(title, category, reading) {
       actionSteps: [
         "Inspect CT shorting blocks on R, Y, B phases in meter cubicle.",
         "Check PT secondary voltage fuses (FU1-FU3).",
-        "Verify Modbus register map offset address configuration in KIOT gateway."
+        "Verify Modbus register map offset address configuration in SIOT gateway."
       ],
       equipmentRisk: "MODERATE",
       estimatedCostPenaltyPerHour: "Billing Data Invalidation",
@@ -44683,7 +44683,7 @@ async function askEnergyCopilot(query, contextData) {
   const ai = getGenAI();
   if (ai) {
     try {
-      const systemContext = `You are the KIOT Industrial Energy AI Copilot. You are an expert electrical engineer, power quality specialist, and plant energy manager.
+      const systemContext = `You are the SIOT Industrial Energy AI Copilot. You are an expert electrical engineer, power quality specialist, and plant energy manager.
 Current Plant Summary:
 - Total Active Power: ${contextData.plantSummary.totalActivePowerKw} kW
 - Total Apparent Power: ${contextData.plantSummary.totalApparentPowerKva} kVA
@@ -44715,7 +44715,7 @@ Answer the plant operator's question directly, clearly, with concise technical p
       console.warn("Gemini Copilot chat error:", err);
     }
   }
-  return `### KIOT Industrial Energy Copilot (Offline Heuristic Mode)
+  return `### SIOT Industrial Energy Copilot (Offline Heuristic Mode)
 
 **Analysis of Plant State:**
 - **Active Load**: Total plant load is running at **${contextData.plantSummary.totalActivePowerKw} kW** (${contextData.plantSummary.totalApparentPowerKva} kVA apparent demand).
@@ -50479,14 +50479,14 @@ var KiotSimulatorEngine = class {
         category: "GATEWAY_OFFLINE",
         severity: "CRITICAL",
         title: `Gateway Offline / Communication Dropout on ${device_name}`,
-        description: `KIOT gateway failed to respond for ${status.last_update_seconds}s (online status: ${status.online}). Loss of real-time telemetry stream.`,
+        description: `SIOT gateway failed to respond for ${status.last_update_seconds}s (online status: ${status.online}). Loss of real-time telemetry stream.`,
         assignee: "IoT Field Technician",
         slaMinutes: 30,
         aiRootCause: "Modbus RS-485 serial communication dropout or Ethernet gateway DHCP network timeout.",
         aiImpact: "Inability to track peak demand or detect transient electrical overloads; risking unmonitored power quality degradation.",
         aiSteps: [
           "Inspect physical RS-485 twisted pair wiring between meter and gateway.",
-          "Verify 24V DC auxiliary power supply to KIOT IoT gateway module.",
+          "Verify 24V DC auxiliary power supply to SIOT IoT gateway module.",
           "Ping gateway IP address on Plant Substation VLAN."
         ],
         costPenalty: "$0 direct (Operational Blindspot Risk)"

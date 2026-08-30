@@ -12,7 +12,7 @@ export const ApiDocsView: React.FC = () => {
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-100 font-mono">
-              KIOT Energy Monitoring System (EMS) • REST API Specification
+              SIOT Energy Monitoring System (EMS) • REST API Specification
             </h2>
             <p className="text-xs text-slate-400">
               High-throughput Modbus TCP & RS485 gateway data pipeline specification

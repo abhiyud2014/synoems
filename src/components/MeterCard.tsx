@@ -116,7 +116,7 @@ export const MeterCard: React.FC<MeterCardProps> = ({
             <button
               onClick={() => onOpenRawJson(reading)}
               className="p-1.5 rounded-md bg-slate-800/80 hover:bg-violet-500/20 text-slate-400 hover:text-violet-300 border border-slate-700 hover:border-violet-500/40 transition-colors"
-              title="View KIOT REST JSON Payload"
+              title="View SIOT REST JSON Payload"
             >
               <Code2 className="w-3.5 h-3.5" />
             </button>

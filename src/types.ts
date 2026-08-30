@@ -1,6 +1,6 @@
 /**
- * KIOT Industrial Energy Management System (EMS) TypeScript Definitions
- * Follows the official KIOT Energy Monitoring System API schema.
+ * SIOT Industrial Energy Management System (EMS) TypeScript Definitions
+ * Follows the official SIOT Energy Monitoring System API schema.
  */
 
 export interface KiotGatewayStatus {

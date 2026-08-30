@@ -11,7 +11,7 @@ export function formatElectricalValue(
     return { text: '--', isInvalid: true, isSentinel: false };
   }
 
-  // Sentinel detection as per KIOT specification
+  // Sentinel detection as per SIOT specification
   if (value === 9999 || value === 999999) {
     return {
       text: 'INVALID (9999)',

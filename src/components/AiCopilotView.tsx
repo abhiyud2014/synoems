@@ -31,7 +31,7 @@ export const AiCopilotView: React.FC<AiCopilotViewProps> = ({ meters, plantSumma
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello! I am your **KIOT Industrial Energy AI Co-Pilot**. I am actively monitoring telemetry from ${meters.length} Modbus feeders across the facility.
+      text: `Hello! I am your **SIOT Industrial Energy AI Co-Pilot**. I am actively monitoring telemetry from ${meters.length} Modbus feeders across the facility.
       
 You can ask me about **harmonic distortion mitigation (IEEE-519)**, **APFC capacitor bank stepping**, **demand charge reduction**, or **root cause analysis** on any meter or anomaly.`,
       timestamp: new Date().toLocaleTimeString(),
@@ -140,7 +140,7 @@ You can ask me about **harmonic distortion mitigation (IEEE-519)**, **APFC capac
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2 font-mono">
-                <span>KIOT INDUSTRIAL AI COPILOT</span>
+                <span>SIOT INDUSTRIAL AI COPILOT</span>
                 <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   Gemini 3.7 Flash Engine
                 </span>
@@ -187,7 +187,7 @@ You can ask me about **harmonic distortion mitigation (IEEE-519)**, **APFC capac
           {loading && (
             <div className="flex items-center gap-2 text-xs text-indigo-400 p-2 font-mono">
               <Sparkles className="w-4 h-4 animate-spin" />
-              <span>Analyzing KIOT Modbus telemetry stream & synthesizing diagnostic...</span>
+              <span>Analyzing SIOT Modbus telemetry stream & synthesizing diagnostic...</span>
             </div>
           )}
         </div>

@@ -139,7 +139,7 @@ export const HistorianView: React.FC<HistorianViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `KIOT_Historian_${activeMeter?.device_name}_${range}.csv`);
+    link.setAttribute('download', `SIOT_Historian_${activeMeter?.device_name}_${range}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

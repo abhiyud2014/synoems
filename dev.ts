@@ -12,7 +12,7 @@ async function startDevServer() {
   app.use(vite.middlewares);
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`⚡ KIOT Industrial EMS running on http://localhost:${PORT}`);
+    console.log(`⚡ SIOT Industrial EMS running on http://localhost:${PORT}`);
   });
 }
 

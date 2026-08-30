@@ -49,7 +49,7 @@ export const RawJsonModal: React.FC<RawJsonModalProps> = ({ reading, onClose }) 
             </div>
             <div>
               <h3 className="text-xs font-bold text-slate-100 flex items-center gap-2">
-                <span>KIOT JSON TELEMETRY PAYLOAD</span>
+                <span>SIOT JSON TELEMETRY PAYLOAD</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700">
                   {reading.device_id}
                 </span>

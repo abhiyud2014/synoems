@@ -324,7 +324,7 @@ export function App() {
               }`}
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span>KIOT REST API</span>
+              <span>SIOT REST API</span>
             </button>
           </div>
         </div>

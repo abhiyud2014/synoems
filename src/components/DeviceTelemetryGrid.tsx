@@ -60,7 +60,7 @@ export const DeviceTelemetryGrid: React.FC<DeviceTelemetryGridProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `KIOT_SCADA_Telemetry_Grid_${Date.now()}.csv`);
+    link.setAttribute('download', `SIOT_SCADA_Telemetry_Grid_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
