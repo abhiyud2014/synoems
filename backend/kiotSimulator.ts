@@ -9,6 +9,7 @@ import {
   IncidentAssigneeRole,
   PlantEnergySummary,
 } from '../src/types';
+import { loadIncidents, saveIncidents, isKVAvailable } from './kvStore';
 
 export const METERS: KiotDiscoveredMeter[] = [
   {
@@ -251,6 +252,8 @@ class KiotSimulatorEngine {
     };
 
     this.incidents.push(initialIncident1, initialIncident2);
+    // Persist initial seed to KV if available
+    saveIncidents(this.incidents);
   }
 
   public generateReadingForMeter(
@@ -736,7 +739,16 @@ class KiotSimulatorEngine {
     return history;
   }
 
-  public getIncidents(): Incident[] {
+  public async getIncidents(): Promise<Incident[]> {
+    // On Vercel, each cold start recreates this engine with fresh seeds.
+    // Load from KV to get the real (user-modified) state.
+    if (isKVAvailable()) {
+      const stored = await loadIncidents();
+      if (stored && stored.length > 0) {
+        this.incidents = stored;
+      }
+    }
+
     // Update SLA breaches dynamically
     const now = Date.now();
     const sevWeight: Record<string, number> = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
@@ -766,12 +778,20 @@ class KiotSimulatorEngine {
       });
   }
 
-  public updateIncidentStatus(
+  public async updateIncidentStatus(
     incidentId: string,
     status: Incident['status'],
     author: string = 'Control Room Operator',
     note?: string
-  ): Incident | null {
+  ): Promise<Incident | null> {
+    // Load latest from KV first (another instance may have updated)
+    if (isKVAvailable()) {
+      const stored = await loadIncidents();
+      if (stored && stored.length > 0) {
+        this.incidents = stored;
+      }
+    }
+
     const incident = this.incidents.find((i) => i.id === incidentId);
     if (!incident) return null;
 
@@ -788,13 +808,23 @@ class KiotSimulatorEngine {
       note,
     });
 
+    await saveIncidents(this.incidents);
     return incident;
   }
 
-  public updateIncidentDiagnosis(incidentId: string, diagnosis: Incident['aiDiagnosis']): Incident | null {
+  public async updateIncidentDiagnosis(incidentId: string, diagnosis: Incident['aiDiagnosis']): Promise<Incident | null> {
+    // Load latest from KV first
+    if (isKVAvailable()) {
+      const stored = await loadIncidents();
+      if (stored && stored.length > 0) {
+        this.incidents = stored;
+      }
+    }
+
     const incident = this.incidents.find((i) => i.id === incidentId);
     if (!incident) return null;
     incident.aiDiagnosis = diagnosis;
+    await saveIncidents(this.incidents);
     return incident;
   }
 
