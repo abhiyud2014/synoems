@@ -50455,9 +50455,7 @@ var KiotSimulatorEngine = class {
         history.shift();
       }
       this.historicalData.set(meter.device_id, history);
-      if (!isVercel) {
-        this.evaluateAnomalyRule(reading);
-      }
+      this.evaluateAnomalyRule(reading);
     });
   }
   randomlyInjectOrClearFault() {

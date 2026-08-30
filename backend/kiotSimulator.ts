@@ -496,10 +496,8 @@ class KiotSimulatorEngine {
       this.historicalData.set(meter.device_id, history);
 
       // Evaluate anomaly engine for auto-incident ticketing
-      // Skip on Vercel — incidents would pile up across cold starts with no cooldown persistence
-      if (!isVercel) {
-        this.evaluateAnomalyRule(reading);
-      }
+      // Now safe on Vercel since incidents persist via Redis — dedup check loads from KV
+      this.evaluateAnomalyRule(reading);
     });
   }
 
