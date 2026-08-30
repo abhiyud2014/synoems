@@ -50005,8 +50005,8 @@ var INCIDENTS_KEY = "ems:incidents";
 var redis = null;
 function getRedis() {
   if (redis !== null) return redis;
-  const url = process.env["UPSTASH_REDIS_REST_URL"];
-  const token = process.env["UPSTASH_REDIS_REST_TOKEN"];
+  const url = process.env["KV_REST_API_URL"];
+  const token = process.env["KV_REST_API_TOKEN"];
   if (url && token) {
     redis = new Redis2({ url, token });
   }
